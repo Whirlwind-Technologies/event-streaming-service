@@ -1,0 +1,379 @@
+services:
+  # Kafka with KRaft mode (no Zookeeper needed)
+  kafka-0:
+    image: bitnami/kafka:3.6
+    container_name: nnipa-kafka-0
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      # Listeners - FIXED: Added internal listener for container communication
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,INTERNAL://kafka-0:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      # Cluster settings
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=3
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=2
+      # Performance settings
+      - KAFKA_CFG_NUM_NETWORK_THREADS=8
+      - KAFKA_CFG_NUM_IO_THREADS=8
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600
+      # Log settings
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=1073741824
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000
+      - KAFKA_CFG_LOG_CLEANUP_POLICY=delete
+      - KAFKA_CFG_COMPRESSION_TYPE=producer
+      # Other settings
+      - KAFKA_CFG_NUM_PARTITIONS=6
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka-0-data:/bitnami/kafka
+    networks:
+      - nnipa-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  kafka-1:
+    image: bitnami/kafka:3.6
+    container_name: nnipa-kafka-1
+    ports:
+      - "9094:9092"
+      - "9095:9093"
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      # Listeners - FIXED: Added internal listener for container communication
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9094,INTERNAL://kafka-1:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      # Cluster settings
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=3
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=2
+      # Performance settings
+      - KAFKA_CFG_NUM_NETWORK_THREADS=8
+      - KAFKA_CFG_NUM_IO_THREADS=8
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600
+      # Log settings
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=1073741824
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000
+      - KAFKA_CFG_LOG_CLEANUP_POLICY=delete
+      - KAFKA_CFG_COMPRESSION_TYPE=producer
+      # Other settings
+      - KAFKA_CFG_NUM_PARTITIONS=6
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka-1-data:/bitnami/kafka
+    networks:
+      - nnipa-network
+    depends_on:
+      - kafka-0
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  kafka-2:
+    image: bitnami/kafka:3.6
+    container_name: nnipa-kafka-2
+    ports:
+      - "9096:9092"
+      - "9097:9093"
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      # Listeners - FIXED: Added internal listener for container communication
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9096,INTERNAL://kafka-2:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      # Cluster settings
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=3
+      - KAFKA_CFG_MIN_INSYNC_REPLICAS=2
+      # Performance settings
+      - KAFKA_CFG_NUM_NETWORK_THREADS=8
+      - KAFKA_CFG_NUM_IO_THREADS=8
+      - KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES=102400
+      - KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES=104857600
+      # Log settings
+      - KAFKA_CFG_LOG_RETENTION_HOURS=168
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=1073741824
+      - KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS=300000
+      - KAFKA_CFG_LOG_CLEANUP_POLICY=delete
+      - KAFKA_CFG_COMPRESSION_TYPE=producer
+      # Other settings
+      - KAFKA_CFG_NUM_PARTITIONS=6
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka-2-data:/bitnami/kafka
+    networks:
+      - nnipa-network
+    depends_on:
+      - kafka-0
+      - kafka-1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Schema Registry - FIXED: Updated to use internal Kafka listeners
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.1
+    container_name: nnipa-schema-registry
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      # FIXED: Use internal Kafka listeners instead of external ones
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka-0:29092,kafka-1:29092,kafka-2:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: 'full_transitive'
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 3
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: '_schemas'
+      SCHEMA_REGISTRY_DEBUG: 'false'
+    networks:
+      - nnipa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Kafka UI for monitoring - FIXED: Updated to use internal Kafka listeners
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: nnipa-kafka-ui
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+      - schema-registry
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: nnipa-cluster
+      # FIXED: Use internal Kafka listeners
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-0:29092,kafka-1:29092,kafka-2:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      KAFKA_CLUSTERS_0_READONLY: 'false'
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - nnipa-network
+
+  # Kafdrop - FIXED: Updated to use internal Kafka listeners
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: nnipa-kafdrop
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    ports:
+      - "9000:9000"
+    environment:
+      # FIXED: Use internal Kafka listeners
+      KAFKA_BROKERCONNECT: kafka-0:29092,kafka-1:29092,kafka-2:29092
+      JVM_OPTS: "-Xms32M -Xmx64M"
+      SCHEMAREGISTRY_CONNECT: http://schema-registry:8081
+      CMD_ARGS: "--message.format=PROTOBUF --protobufdesc.directory=/var/protobuf_desc"
+    volumes:
+      - ./nnipa-protos/target/classes:/var/protobuf_desc
+    networks:
+      - nnipa-network
+
+  # Event Streaming Service - FIXED: Updated to use internal Kafka listeners
+  event-streaming-service:
+    build:
+      context: ./event-streaming-service
+      dockerfile: Dockerfile
+    container_name: nnipa-event-streaming
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+      - schema-registry
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BROKERS: kafka-0:29092,kafka-1:29092,kafka-2:29092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: nnipa-redis
+      REDIS_PORT: 6379
+      JAVA_OPTS: -Xms512m -Xmx1024m
+    volumes:
+      - ./event-streaming-service/logs:/logs
+    networks:
+      - nnipa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/event-streaming/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Kafka Init Container - FIXED: Updated to use internal Kafka listeners
+  kafka-init:
+    image: bitnami/kafka:3.6
+    container_name: nnipa-kafka-init
+    depends_on:
+      kafka-0:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+    networks:
+      - nnipa-network
+    command: |
+      bash -c "
+        echo 'Waiting for Kafka cluster to be ready...'
+        sleep 10
+      
+        echo 'Creating topics...'
+      
+        # FIXED: Use internal Kafka listeners for topic creation
+        # Tenant Events Topics
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.tenant.created \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000 \
+          --config compression.type=snappy \
+          --config min.insync.replicas=2
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.tenant.updated \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000 \
+          --config compression.type=snappy
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.tenant.activated \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.tenant.deactivated \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000
+      
+        # Auth Events Topics
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.auth.login \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000 \
+          --config compression.type=snappy
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.auth.logout \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.auth.login-failed \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.events.auth.password-changed \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000
+      
+        # Command Topics
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.commands.notification.send \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=604800000 \
+          --config compression.type=snappy
+      
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.commands.audit.log \
+          --partitions 6 --replication-factor 3 \
+          --config retention.ms=2419200000 \
+          --config compression.type=snappy \
+          --config min.insync.replicas=2
+      
+        # Dead Letter Queue Topics
+        kafka-topics.sh --create --if-not-exists \
+          --bootstrap-server kafka-0:29092 \
+          --topic nnipa.dlq.events \
+          --partitions 3 --replication-factor 3 \
+          --config retention.ms=1209600000 \
+          --config compression.type=snappy
+      
+        echo 'Topics created successfully!'
+      
+        # List all topics
+        echo 'Listing all topics:'
+        kafka-topics.sh --list --bootstrap-server kafka-0:29092
+      "
+
+volumes:
+  kafka-0-data:
+    driver: local
+  kafka-1-data:
+    driver: local
+  kafka-2-data:
+    driver: local
+
+networks:
+  nnipa-network:
+    external: true

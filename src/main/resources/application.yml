@@ -1,0 +1,254 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /event-streaming
+
+spring:
+  application:
+    name: event-streaming-service
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 5
+      timeout: 5000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+
+    # Producer Configuration
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 10
+      buffer-memory: 33554432
+      compression-type: snappy
+      enable-idempotence: true
+      transactional-id: ${spring.application.name}-${random.uuid}
+      properties:
+        max.in.flight.requests.per.connection: 5
+        enable.idempotence: true
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        auto.register.schemas: true
+        use.latest.version: false
+
+    # Consumer Configuration
+    consumer:
+      group-id: ${spring.application.name}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 500
+      fetch-min-size: 1
+      fetch-max-wait: 500ms
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        # Remove or comment out the problematic property
+        # specific.protobuf.value.type: true
+        specific.protobuf.value.type: com.google.protobuf.DynamicMessage
+        isolation.level: read_committed
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+
+    # Admin Configuration
+    admin:
+      properties:
+        bootstrap.servers: ${KAFKA_BROKERS:localhost:9092}
+        request.timeout.ms: 30000
+
+    # Kafka Streams Configuration (disabled - not using streams)
+    # streams:
+    #   application-id: ${spring.application.name}-streams
+    #   bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    #   properties:
+    #     default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+    #     default.value.serde: io.confluent.kafka.streams.serdes.protobuf.KafkaProtobufSerde
+    #     schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+    #     processing.guarantee: exactly_once_v2
+    #     num.stream.threads: 2
+    #     cache.max.bytes.buffering: 10485760
+    #     commit.interval.ms: 1000
+    #     state.dir: /tmp/kafka-streams
+
+    # Listener Configuration
+    listener:
+      type: batch
+      ack-mode: manual
+      concurrency: 3
+      poll-timeout: 3000
+
+# Schema Registry Configuration
+schema:
+  registry:
+    url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+    compatibility: FULL_TRANSITIVE
+    cache-size: 1000
+
+# Event Streaming Service Configuration
+event-streaming:
+  # Topic Configuration
+  topics:
+    # Tenant Events
+    tenant-created: nnipa.events.tenant.created
+    tenant-updated: nnipa.events.tenant.updated
+    tenant-activated: nnipa.events.tenant.activated
+    tenant-deactivated: nnipa.events.tenant.deactivated
+    tenant-deleted: nnipa.events.tenant.deleted
+    subscription-changed: nnipa.events.tenant.subscription-changed
+    feature-enabled: nnipa.events.tenant.feature-enabled
+    feature-disabled: nnipa.events.tenant.feature-disabled
+
+    # Auth Events
+    user-login: nnipa.events.auth.login
+    user-logout: nnipa.events.auth.logout
+    login-failed: nnipa.events.auth.login-failed
+    password-changed: nnipa.events.auth.password-changed
+    mfa-enabled: nnipa.events.auth.mfa-enabled
+    token-generated: nnipa.events.auth.token-generated
+
+    # Command Topics
+    validate-tenant: nnipa.commands.tenant.validate
+    send-notification: nnipa.commands.notification.send
+    audit-log: nnipa.commands.audit.log
+
+    # Dead Letter Topics
+    dlq-prefix: nnipa.dlq
+
+  # Topic Creation Settings
+  topic-config:
+    default-partitions: 6
+    default-replication-factor: 3
+    retention-ms: 604800000  # 7 days
+    segment-ms: 86400000     # 1 day
+    compression-type: snappy
+    min-in-sync-replicas: 2
+
+  # Event Replay Configuration
+  replay:
+    enabled: true
+    max-replay-duration: 7d
+    batch-size: 100
+
+  # Message Routing Rules
+  routing:
+    partition-strategy: KEY_BASED  # KEY_BASED, ROUND_ROBIN, CUSTOM
+    key-extractors:
+      tenant-id: "metadata.tenant_id"
+      user-id: "metadata.user_id"
+      correlation-id: "metadata.correlation_id"
+
+  # Consumer Group Management
+  consumer-groups:
+    auto-create: true
+    default-consumers: 3
+    max-consumers: 10
+
+  # Dead Letter Queue Configuration
+  dlq:
+    enabled: true
+    max-retries: 3
+    retry-delay-ms: 5000
+    exponential-backoff: true
+
+  # Monitoring
+  monitoring:
+    metrics-enabled: true
+    trace-enabled: true
+    log-payload: false  # Set to true in dev only
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      kafka-producer:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+
+      schema-registry:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+
+  retry:
+    instances:
+      kafka-producer:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+
+  bulkhead:
+    instances:
+      kafka-consumer:
+        max-concurrent-calls: 10
+        max-wait-duration: 5s
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,kafka
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.nnipa.eventstreaming: DEBUG
+    org.apache.kafka: INFO
+    io.confluent: INFO
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/event-streaming-service.log
+    max-size: 10MB
+    max-history: 30
+
+# API Documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
